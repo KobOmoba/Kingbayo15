@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#4f46e5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Edu-BLOOM">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Educational Bloom · School Portal</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="style.css">
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<style>
+.pwd-wrap{position:relative;display:flex;align-items:center;}
+.pwd-wrap input{flex:1;padding-right:2.8rem !important;}
+.eye-btn{position:absolute;right:0;top:0;bottom:0;width:2.6rem;background:none;border:none;cursor:pointer;font-size:1.1rem;padding:0;margin:0;display:flex;align-items:center;justify-content:center;opacity:0.75;transition:opacity .15s;-webkit-tap-highlight-color:transparent;}
+.eye-btn:hover,.eye-btn:active{opacity:1;}
+.remember-row{display:flex;align-items:center;margin:0.4rem 0 0.55rem;}
+.rem-label{display:flex;align-items:center;gap:0.45rem;font-size:0.8rem;color:var(--sub);cursor:pointer;font-weight:500;user-select:none;}
+.rem-label input[type=checkbox]{width:15px;height:15px;accent-color:var(--brand);cursor:pointer;margin:0;}
+.ca-row{display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--border);}
+.ca-name{font-size:0.82rem;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:0.5rem;}
+.ca-btns{display:flex;gap:4px;flex-shrink:0;}
+.ca-btn{width:36px;height:36px;border:2px solid var(--border);border-radius:10px;background:var(--s2);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;-webkit-tap-highlight-color:transparent;}
+.ca-btn-active-p{background:#dcfce7;border-color:#16a34a;}
+.ca-btn-active-a{background:#fee2e2;border-color:#dc2626;}
+.ca-btn-active-l{background:#fef9c3;border-color:#ca8a04;}
+.ca-summary-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.65rem;}
+.ss-row{display:grid;grid-template-columns:1fr 70px 70px 60px;gap:4px;padding:0.3rem 0;border-bottom:1px solid var(--border);align-items:center;}
+.ss-inp{width:100%;text-align:center;margin:0;padding:0.35rem 0.2rem;font-size:0.82rem;border:1px solid var(--border);border-radius:6px;}
+.ss-tot{font-weight:700;font-size:0.85rem;text-align:center;}
+.bwa-card{background:var(--s2);border-radius:14px;padding:1.1rem;margin-bottom:0.75rem;}
+.bwa-progress-bar{height:6px;background:var(--border);border-radius:3px;margin:0.5rem 0;}
+.bwa-pct{height:6px;background:var(--brand);border-radius:3px;transition:width .3s;}
+.bwa-stat{font-size:0.72rem;color:var(--sub);text-align:center;margin-bottom:0.4rem;}
+.bwa-name-big{font-size:1.1rem;font-weight:800;text-align:center;margin-bottom:0.2rem;}
+.bwa-owe-big{font-size:1.3rem;font-weight:900;color:var(--danger);text-align:center;margin-bottom:0.15rem;}
+.bwa-phone-sm{font-size:0.75rem;color:var(--sub);text-align:center;margin-bottom:0.75rem;}
+.subj-chip{display:inline-flex;align-items:center;gap:4px;background:var(--s2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:0.74rem;font-weight:600;color:var(--text);}
+.chip-del{background:none;border:none;color:var(--danger);font-size:1rem;cursor:pointer;padding:0;line-height:1;margin-left:2px;font-weight:700;}
+.mhdr{font-weight:800;font-size:0.95rem;padding:0 0 0.65rem;margin-bottom:0.65rem;border-bottom:1px solid var(--border);}
+</style>
+<script>
+function toggleEye(inputId,btn){var inp=document.getElementById(inputId);if(!inp)return;var show=inp.type==='password';inp.type=show?'text':'password';btn.textContent=show?'🙈':'👁️';}
+</script>
+</head>
+<body>
+
+<!-- Demo banner — ID matches app.js loadDemo() which hides id="app" not "main-app" -->
+<div id="demo-banner" style="display:none;position:sticky;top:0;z-index:1001;background:linear-gradient(135deg,#7c3aed,#2563eb);padding:0.5rem 1rem;gap:0.75rem;align-items:center;justify-content:space-between;font-size:0.78rem;color:#fff;font-weight:700;">
+  <span>🎬 DEMO MODE — No data is saved. <span style="font-weight:400;opacity:0.85;">Explore freely!</span></span>
+  <button onclick="document.getElementById('login').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('demo-banner').style.display='none';" style="background:rgba(255,255,255,0.2);border:none;border-radius:6px;padding:3px 10px;color:#fff;cursor:pointer;font-weight:700;font-size:0.74rem;">✕ Exit Demo</button>
+</div>
+
+<!-- Tier alert banner -->
+<div id="tier-alert-banner" style="display:none;position:sticky;top:0;z-index:1000;background:#1e293b;border-bottom:2px solid #f59e0b;padding:0.65rem 1rem;gap:0.75rem;align-items:center;font-size:0.82rem;color:#f1f5f9;"></div>
+
+<!-- PWA Install Banner -->
+<div id="pwa-install-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#4f46e5,#7c3aed);padding:0.75rem 1rem;align-items:center;justify-content:space-between;gap:0.5rem;box-shadow:0 -4px 20px rgba(0,0,0,0.3);">
+  <div style="display:flex;align-items:center;gap:0.6rem;">
+    <img src="icon-192x192.png" style="width:36px;height:36px;border-radius:8px;" alt="Edu-BLOOM">
+    <div><div style="font-weight:700;font-size:0.82rem;color:#fff;">Install Edu-BLOOM</div><div style="font-size:0.72rem;color:rgba(255,255,255,0.8);">Add to home screen for offline access</div></div>
+  </div>
+  <div style="display:flex;gap:0.5rem;flex-shrink:0;">
+    <button onclick="installPWA()" style="background:#fff;color:#4f46e5;border:none;border-radius:8px;padding:0.4rem 0.85rem;font-weight:700;font-size:0.78rem;cursor:pointer;">Install</button>
+    <button onclick="document.getElementById('pwa-install-banner').style.display='none'" style="background:rgba(255,255,255,0.2);color:#fff;border:none;border-radius:8px;padding:0.4rem 0.6rem;font-weight:700;font-size:0.78rem;cursor:pointer;">✕</button>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="login" class="login" style="display:flex;">
+  <div class="lbox">
+    <div class="lbox-logo">🌸 Educational Bloom</div>
+    <div class="lbox-sub">School Management Portal · AariNAT Company</div>
+    <label>School ID</label>
+    <input type="text" id="l-school" placeholder="e.g. BLOOM-ABK0042" autocapitalize="characters" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')doLogin()" autofocus>
+    <div class="remember-row" style="margin-top:0.4rem;">
+      <label class="rem-label"><input type="checkbox" id="l-remember" checked> Remember me on this device</label>
+    </div>
+    <button id="l-btn" class="btn-brand" onclick="doLogin()" style="margin-top:0.75rem;">▶ Enter Portal</button>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:0.6rem;">
+      <div style="flex:1;height:1px;background:var(--border);"></div>
+      <span style="font-size:0.7rem;color:var(--sub);">or</span>
+      <div style="flex:1;height:1px;background:var(--border);"></div>
+    </div>
+    <button type="button" onclick="loadDemo()" style="width:100%;background:transparent;border:1.5px solid var(--border);border-radius:10px;padding:0.6rem;font-size:0.85rem;color:var(--sub);cursor:pointer;font-weight:600;margin-top:0.4rem;">🎬 Try Demo (no login needed)</button>
+    <div id="l-err" class="err"></div>
+    <p style="font-size:0.72rem;color:var(--sub);text-align:center;margin-top:1rem;">Your <strong>School ID</strong> was sent by your AariNAT agent via WhatsApp.<br><br>Need help? <strong>+234 814 507 3941</strong></p>
+    <p style="font-size:0.68rem;color:var(--sub);text-align:center;margin-top:0.5rem;">
+      <button type="button" onclick="openM('privacy-modal')" style="background:none;border:none;color:#60a5fa;font-size:0.68rem;cursor:pointer;text-decoration:underline;font-family:inherit;">Privacy Policy</button> · 
+      <button type="button" onclick="openM('privacy-modal')" style="background:none;border:none;color:#60a5fa;font-size:0.68rem;cursor:pointer;text-decoration:underline;font-family:inherit;">NDPA Compliance</button>
+    </p>
+  </div>
+</div>
+
+<!-- STAFF LOGIN -->
+<div id="staff-login" style="display:none;position:fixed;inset:0;z-index:9999;background:radial-gradient(ellipse at 30% 20%,#0f2847 0%,#050d18 60%);align-items:center;justify-content:center;padding:1.5rem;">
+  <div class="lbox" style="width:100%;max-width:380px;">
+    <div class="lbox-logo" style="font-size:1rem;margin-bottom:0.2rem;">🏫 <span id="sl-school-name">Educational Bloom</span></div>
+    <div class="lbox-sub" style="margin-bottom:1rem;">Who is logging in?</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1.2rem;">
+      <button id="sl-tab-p" type="button" onclick="slSetTab('principal')" style="padding:10px 6px;border-radius:10px;border:2px solid var(--brand);background:var(--brand);color:#fff;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit;">🎓 Principal</button>
+      <button id="sl-tab-s" type="button" onclick="slSetTab('staff')" style="padding:10px 6px;border-radius:10px;border:2px solid var(--border);background:transparent;color:var(--sub);font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit;">👤 Staff</button>
+    </div>
+    <div id="sl-panel-p" style="display:block;">
+      <div style="background:rgba(79,70,229,.12);border:1px solid rgba(79,70,229,.3);border-radius:8px;padding:9px 12px;font-size:0.74rem;color:#a5b4fc;margin-bottom:0.9rem;line-height:1.5;">Enter the <strong style="color:#fff;">school password</strong> from your agent's WhatsApp.<br><span style="color:#34d399;font-weight:700;">Default: bloom2026</span></div>
+      <label style="font-size:0.76rem;font-weight:700;color:var(--sub);display:block;margin-bottom:4px;">School Password</label>
+      <div class="pwd-wrap" style="margin-bottom:0.5rem;">
+        <input type="password" id="sl-p-pwd" placeholder="e.g. bloom2026" autocomplete="current-password" onkeydown="if(event.key==='Enter')doPrincipalLogin()">
+        <button type="button" class="eye-btn" onclick="toggleEye('sl-p-pwd',this)" tabindex="-1">👁️</button>
+      </div>
+      <div style="text-align:right;margin-bottom:0.8rem;"><span onclick="slForgotPassword()" style="font-size:0.71rem;color:#818cf8;cursor:pointer;text-decoration:underline;">Forgot password? Contact agent →</span></div>
+      <div id="sl-p-err" class="err" style="display:none;margin-bottom:0.6rem;"></div>
+      <button type="button" class="btn-brand" onclick="doPrincipalLogin()">▶ Enter as Principal</button>
+    </div>
+    <div id="sl-panel-s" style="display:none;">
+      <label>Staff Email</label><input type="email" id="sl-email" placeholder="e.g. teacher@school.edu.ng" autocomplete="email" onkeydown="if(event.key==='Enter')document.getElementById('sl-pwd').focus()">
+      <label>Password</label>
+      <div class="pwd-wrap"><input type="password" id="sl-pwd" placeholder="Your staff password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doStaffLogin()"><button type="button" class="eye-btn" onclick="toggleEye('sl-pwd',this)" tabindex="-1">👁️</button></div>
+      <div id="sl-s-err" class="err" style="display:none;margin-top:0.3rem;"></div>
+      <button type="button" class="btn-brand" onclick="doStaffLogin()" style="margin-top:0.6rem;">▶ Enter as Staff</button>
+    </div>
+    <button type="button" onclick="location.reload()" style="width:100%;background:transparent;border:1px solid var(--border);border-radius:10px;padding:10px;font-size:0.8rem;color:var(--sub);cursor:pointer;margin-top:0.75rem;font-family:inherit;">← Change School ID</button>
+    <div style="text-align:center;margin-top:0.7rem;font-size:0.7rem;color:var(--sub);">Need help? <strong style="color:var(--text);">+234 814 507 3941</strong></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none;">
+  <div class="fee-hero">
+    <div class="fh-label">⚠️ Outstanding Fees This Term</div>
+    <div class="fh-amount" id="banner-amount">₦0</div>
+    <div class="fh-sub" id="banner-sub">Loading...</div>
+    <div class="fh-btns">
+      <button class="fh-btn fh-primary" onclick="startBulkWA()">📲 Send Fee Reminders</button>
+      <button class="fh-btn fh-ghost" onclick="go('students')">👥 View Students</button>
+    </div>
+  </div>
+  <header class="hdr">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div id="school-logo-badge" onclick="handleLogoBadgeTap()" title="Tap to upload school logo" style="width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.35);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1rem;color:#fff;cursor:pointer;flex-shrink:0;background-size:cover;background-position:center;overflow:hidden;"><span id="school-logo-initial" style="pointer-events:none;">S</span></div>
+      <div><div class="hdr-name" id="hdr-school">Loading...</div><div class="hdr-sub"><span id="hdr-role">—</span> · <span id="hdr-term">—</span></div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:7px;">
+      <span id="planBadge" class="plan-badge plan-basic">Basic</span>
+      <span id="sync" class="sdot sd-off">● Offline</span>
+      <button class="btn-sm btn-ghost" onclick="logout()">Exit</button>
+    </div>
+  </header>
+  <main class="wrap">
+
+    <!-- 1. REVENUE -->
+    <section id="sec-revenue" class="sec on">
+      <div id="birthday-widget"></div>
+      <div class="stats">
+        <div class="stat"><div class="sn" id="d-students">0</div><div class="sl">Students</div></div>
+        <div class="stat"><div class="sn" id="d-collected" style="color:var(--money);font-size:1rem;">₦0</div><div class="sl">Collected</div></div>
+        <div class="stat"><div class="sn" id="d-outstanding" style="color:var(--danger);font-size:1rem;">₦0</div><div class="sl">Outstanding</div></div>
+        <div class="stat"><div class="sn" id="d-rate">0%</div><div class="sl">Collection Rate</div></div>
+      </div>
+      <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.35rem;"><span style="font-weight:700;font-size:0.85rem;">📊 Collection Progress</span><span id="prog-pct" style="font-weight:800;color:var(--money);font-size:0.88rem;">0%</span></div><div class="prog-bg"><div class="prog-fill" id="prog-fill" style="width:0%;"></div></div></div>
+      <div class="card"><div class="ct">📥 Bulk Payment Import</div><p style="font-size:0.78rem;color:var(--sub);margin-bottom:0.65rem;">Upload a CSV with columns: StudentName, Amount. System matches by name and adds payment.</p><input type="file" id="bulk-csv" accept=".csv" style="display:none;" onchange="handleBulkPayment(event)"><button class="btn-outline" onclick="document.getElementById('bulk-csv').click()">📂 Upload Bank Statement CSV</button><div id="bulk-feedback" style="font-size:0.78rem;margin-top:0.5rem;color:var(--money);"></div></div>
+      <div class="card"><div class="ct">🚨 Overdue Parents</div><div id="overdue-list"><p style="text-align:center;color:var(--sub);padding:1rem;">Loading...</p></div><button class="btn-ghost btn-sm" style="color:var(--danger);width:100%;margin-top:0.5rem;" onclick="fixGarbledNames()">🔧 Fix Garbled Student Names</button><button class="btn-wa" style="margin-top:0.5rem;" onclick="startBulkWA()">📲 Send Fee Reminders (Guided)</button><button class="btn-outline" style="margin-top:0.4rem;" onclick="startBulkReportCards()">📋 Send Report Cards</button></div>
+    </section>
+
+    <!-- 2. STUDENTS -->
+    <section id="sec-students" class="sec">
+      <div style="display:flex;gap:0.4rem;margin-bottom:0.55rem;flex-wrap:wrap;">
+        <input type="text" id="stu-search" placeholder="Search name or phone…" oninput="renderStudentList()" style="flex:1;min-width:130px;margin:0;">
+        <select id="stu-class" onchange="renderStudentList()" style="margin:0;width:auto;padding:0.5rem 0.55rem;font-size:0.8rem;"></select>
+        <select id="stu-pay" onchange="renderStudentList()" style="margin:0;width:auto;padding:0.5rem 0.55rem;font-size:0.8rem;"><option value="">All</option><option value="paid">Paid</option><option value="owing">Owing</option></select>
+      </div>
+      <div style="display:flex;gap:0.4rem;margin-bottom:0.6rem;flex-wrap:wrap;">
+        <button class="btn-brand btn-sm" onclick="openM('add-student-modal')">➕ Add Student</button>
+        <button class="btn-brand btn-sm" style="background:var(--money);" onclick="openClassAttendance()">📅 Attendance</button>
+        <button class="btn-brand btn-sm" style="background:#7c3aed;" onclick="openSubjectScores()">📚 Scores</button>
+        <button class="btn-brand btn-sm" style="background:#0891b2;" onclick="openScoreOCR()">📸 Scan Scores</button>
+        <button class="btn-brand btn-sm" style="background:#059669;" onclick="openScriptScan()">📝 Scan Scripts</button>
+        <button class="btn-ghost btn-sm" onclick="$('csv-up').click()">📁 Import (CSV/Photo)</button>
+        <button class="btn-ghost btn-sm" style="color:var(--danger);" onclick="fixGarbledNames()">🔧 Fix Names</button>
+        <input type="file" id="csv-up" accept=".csv,.txt,.jpg,.jpeg,.png,.webp,image/*" multiple style="display:none;" onchange="handleCSV(event)">
+      </div>
+      <div id="csv-fb" style="font-size:0.75rem;color:var(--money);margin-bottom:0.4rem;"></div>
+      <div id="students-list"></div>
+    </section>
+
+    <!-- 3. STAFF -->
+    <section id="sec-staff" class="sec">
+      <div class="card"><div class="ct">👥 School Staff</div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;"><span id="staff-count" style="font-size:0.8rem;color:var(--sub);">0/3 used (Basic)</span><button class="btn-brand btn-sm" onclick="openM('add-staff-modal')">➕ Add Staff</button></div><div id="staff-list"></div><div id="staff-upgrade" class="upgrade-lock" style="display:none;"><p style="font-size:0.8rem;font-weight:700;color:#9a3412;">⚠️ Staff limit reached (3/3)</p><button class="btn-brand" onclick="openUpgradeModal()">✨ Upgrade to Premium</button></div></div>
+    </section>
+
+    <!-- 4. SPORTS -->
+    <section id="sec-sports" class="sec">
+      <div class="card"><div class="ct">⚽ Sports & Athletics</div>
+        <div class="sports-grid" id="sports-grid">
+          <div class="sport-card sel" onclick="selectSport('football',this)"><div style="font-size:1.3rem;">⚽</div><div style="font-weight:700;font-size:0.85rem;">Football</div></div>
+          <div class="sport-card" onclick="selectSport('athletics',this)"><div style="font-size:1.3rem;">🏃</div><div style="font-weight:700;font-size:0.85rem;">Athletics</div></div>
+          <div class="sport-card" onclick="selectSport('basketball',this)"><div style="font-size:1.3rem;">🏀</div><div style="font-weight:700;font-size:0.85rem;">Basketball</div></div>
+          <div class="sport-card" onclick="selectSport('volleyball',this)"><div style="font-size:1.3rem;">🏐</div><div style="font-weight:700;font-size:0.85rem;">Volleyball</div></div>
+          <div class="sport-card" onclick="selectSport('tabletennis',this)"><div style="font-size:1.3rem;">🏓</div><div style="font-weight:700;font-size:0.85rem;">Table Tennis</div></div>
+        </div>
+        <button class="btn-outline btn-sm" onclick="openM('custom-sport-modal')" style="margin-bottom:0.75rem;">➕ Add Custom Sport</button>
+        <div id="custom-sports-grid" class="sports-grid"></div>
+        <div style="margin-top:0.75rem;"><div style="font-weight:700;font-size:0.85rem;margin-bottom:0.5rem;">👥 Team: <span id="current-sport-label">Football</span></div><button class="btn-sports btn-sm" onclick="openM('add-player-modal')" style="margin-bottom:0.5rem;">➕ Add Player</button><div id="team-list"></div></div>
+        <div style="margin-top:0.75rem;"><button class="btn-outline btn-sm" onclick="recordMatchResult()">📝 Record Match Result</button></div>
+      </div>
+    </section>
+
+    <!-- 5. ARTS -->
+    <section id="sec-arts" class="sec"><div class="card"><div class="ct">🎨 Arts & Culture</div><div class="art-grid" id="art-gallery"><div class="art-card" onclick="openM('add-artwork-modal')"><div class="art-prev" style="background:#f1f5f9;color:var(--sub);font-size:2rem;">➕</div><div class="art-info"><div class="art-title">Add Artwork</div><div class="art-stu">Tap to add</div></div></div></div><button class="btn-arts" onclick="planExhibition()">🖼️ Plan New Exhibition</button></div></section>
+
+    <!-- 6. MUSIC -->
+    <section id="sec-music" class="sec">
+      <div class="card"><div class="ct">🎵 Music & Performance</div>
+        <div class="music-grid">
+          <div class="music-card"><div style="font-size:1.3rem;">🎤</div><div style="font-weight:700;font-size:0.85rem;margin-top:0.3rem;">School Choir</div><button class="btn-music btn-sm" style="margin-top:0.5rem;" onclick="openM('log-practice-modal')">Log Practice</button></div>
+          <div class="music-card"><div style="font-size:1.3rem;">🥁</div><div style="font-weight:700;font-size:0.85rem;margin-top:0.3rem;">Drumming</div><button class="btn-music btn-sm" style="margin-top:0.5rem;" onclick="openM('log-practice-modal')">Log Practice</button></div>
+          <div class="music-card"><div style="font-size:1.3rem;">🎹</div><div style="font-weight:700;font-size:0.85rem;margin-top:0.3rem;">Instrumental</div><button class="btn-music btn-sm" style="margin-top:0.5rem;" onclick="openM('book-lesson-modal')">Book Lesson</button></div>
+          <div class="music-card"><div style="font-size:1.3rem;">🎸</div><div style="font-weight:700;font-size:0.85rem;margin-top:0.3rem;">Instruments</div><button class="btn-music btn-sm" style="margin-top:0.5rem;" onclick="openM('instrument-modal')">View Inventory</button></div>
+        </div>
+        <div style="margin-top:0.75rem;"><div class="ct" style="font-size:0.82rem;">Recent Practice Logs</div><div id="practice-logs"><p style="color:var(--sub);font-size:0.8rem;text-align:center;padding:0.75rem;">No logs yet.</p></div></div>
+      </div>
+    </section>
+
+    <!-- 7. HEALTH -->
+    <section id="sec-health" class="sec"><div class="stats"><div class="stat"><div class="sn" id="h-visits">0</div><div class="sl">Sick Bay Visits</div></div><div class="stat"><div class="sn" id="h-open">0</div><div class="sl">Open Cases</div></div></div><div class="card"><div class="ct">🏥 Incident Log</div><button class="btn-brand btn-sm" style="margin-bottom:0.75rem;" onclick="openM('log-incident-modal')">➕ Log New Incident</button><div id="health-list"><p style="text-align:center;color:var(--sub);padding:1.5rem;">No incidents logged yet.</p></div></div></section>
+
+    <!-- 8. ALUMNI -->
+    <section id="sec-alumni" class="sec"><div class="stats"><div class="stat"><div class="sn" id="al-count">0</div><div class="sl">Registered Alumni</div></div><div class="stat"><div class="sn" id="al-donations" style="font-size:1rem;">₦0</div><div class="sl">Donations</div></div></div><div class="card"><div class="ct">🎓 Alumni Network</div><button class="btn-brand btn-sm" style="margin-bottom:0.75rem;" onclick="openM('add-alumni-modal')">➕ Add Alumni</button><div id="alumni-list"><p style="text-align:center;color:var(--sub);padding:1.5rem;">No alumni added yet.</p></div><button class="btn-wa" style="margin-top:0.5rem;" onclick="sendFundraisingAppeal()">📢 Send Fundraising Appeal</button></div></section>
+
+    <!-- 9. EXPENSES -->
+    <section id="sec-expenses" class="sec"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.65rem;"><div><div style="font-size:0.75rem;color:var(--sub);">Total This Term</div><div style="font-weight:800;font-size:1.2rem;font-family:'DM Mono',monospace;" id="exp-total">₦0</div></div><button class="btn-brand btn-sm" onclick="openM('add-expense-modal')">➕ Log Expense</button></div><div class="card"><div id="exp-list"><p style="text-align:center;color:var(--sub);padding:2rem;">No expenses logged yet.</p></div></div></section>
+
+    <!-- 10. FINANCE AI -->
+    <section id="sec-finance" class="sec">
+      <div class="card" style="border-left:4px solid #8b5cf6;"><div class="ct">🤖 Finance AI Advisor</div>
+        <div id="finance-empty" class="ai-empty"><div style="text-align:center;padding:1.5rem;"><div style="font-size:2.5rem;">📊</div><h4 style="color:var(--sub);">No Financial Data Yet</h4><p style="font-size:0.82rem;color:var(--sub);margin-bottom:0.75rem;">Add students and record fees to see AI insights here. Or upload a CSV.</p><button class="btn-brand" onclick="$('finance-csv').click()">📤 Upload Financial CSV</button><input type="file" id="finance-csv" accept=".csv,.xlsx" style="display:none;" onchange="handleFinanceUpload(event)"></div></div>
+        <div id="finance-analysis" style="display:none;"><div class="stats" style="margin-bottom:0.65rem;"><div class="stat"><div class="sn" id="ai-projection" style="font-size:1rem;">₦0</div><div class="sl">Term Projection</div></div><div class="stat"><div class="sn" id="ai-anomalies" style="color:var(--danger);">0</div><div class="sl">Large Transactions</div></div></div><div class="ai-rec" id="ai-recommendation">Analysing your data...</div><div id="ai-chat-area" style="margin-top:0.65rem;max-height:200px;overflow-y:auto;"></div><label style="margin-top:0.5rem;">Ask the Finance AI a question</label><input type="text" id="ai-question" placeholder="e.g. How can I improve collection rate?"><button class="btn-brand" onclick="askFinanceAI()">💬 Ask AI</button></div>
+      </div>
+    </section>
+
+    <!-- 11. COMMS -->
+    <section id="sec-comms" class="sec">
+      <div class="card"><div class="ct">📢 Social Media Workstation</div>
+        <div style="background:var(--s2);padding:0.9rem;border-radius:10px;margin-bottom:0.75rem;">
+          <select id="soc-platform" style="margin-bottom:0.5rem;"><option value="">Select Platform</option><option value="facebook">Facebook</option><option value="instagram">Instagram</option><option value="twitter">Twitter/X</option><option value="youtube">YouTube</option><option value="tiktok">TikTok</option><option value="whatsapp">WhatsApp Business</option><option value="telegram">Telegram</option></select>
+          <input type="text" id="soc-name" placeholder="Page name (e.g. @BrightStarsAcademy)" style="margin-bottom:0.5rem;">
+          <input type="url" id="soc-url" placeholder="Page URL (optional)">
+          <button class="btn-brand btn-sm" onclick="addSocialPage()">Add Page</button>
+        </div>
+        <div id="social-pages"><p style="font-size:0.8rem;color:var(--sub);text-align:center;padding:0.75rem;">No pages added yet.</p></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;margin-top:0.75rem;">
+          <button class="btn-money btn-sm" onclick="broadcastFeeReminder()" style="padding:0.55rem;">📢 Fee Reminder</button>
+          <button class="btn-money btn-sm" onclick="broadcastEvent()" style="padding:0.55rem;">📅 Event Notice</button>
+          <button class="btn-brand btn-sm" onclick="broadcastAnnouncement()" style="padding:0.55rem;">🔔 Announcement</button>
+          <button class="btn-ghost btn-sm" onclick="openM('comms-history-modal')" style="padding:0.55rem;color:var(--text);">📜 History</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 12. ANALYTICS -->
+    <section id="sec-analytics" class="sec"><div id="analytics-content"><p style="text-align:center;color:var(--sub);padding:2rem;">Loading...</p></div></section>
+
+    <!-- 13. SECURITY -->
+    <section id="sec-security" class="sec"><div class="card"><div class="ct">🔒 Security Gate</div><p style="font-size:0.8rem;color:var(--sub);margin-bottom:0.65rem;">Instant search by student name or guardian name.</p><input type="text" id="sec-search" placeholder="Search student or guardian name…" oninput="securitySearch()"><div id="security-results"></div></div></section>
+
+    <!-- 14. SUPPORT -->
+    <section id="sec-support" class="sec">
+      <div class="card" style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:2px solid var(--money);"><div class="ct">👤 Your Agent</div><div id="agent-contact"></div></div>
+      <div class="card"><div class="ct">📞 AariNAT Support</div><div style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 0;border-bottom:1px solid var(--border);"><div style="font-size:1.5rem;">📱</div><div style="flex:1;"><div style="font-size:0.68rem;color:var(--sub);text-transform:uppercase;">Support Hotline</div><div style="font-weight:600;">+234 814 507 3941</div></div><button class="btn-wa btn-sm" onclick="window.open('https://wa.me/2348145073941?text=Hello%20AariNAT%20Support%2C%20I%20need%20help%20with%20Educational%20Bloom.','_blank')">📞 Chat</button></div><div style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 0;"><div style="font-size:1.5rem;">✉️</div><div><div style="font-size:0.68rem;color:var(--sub);text-transform:uppercase;">Email</div><div style="font-weight:600;">aarinat.company.limited@gmail.com</div></div></div></div>
+      <div class="card"><div class="ct">❓ FAQ</div>
+        <details style="margin-bottom:0.5rem;"><summary style="cursor:pointer;font-weight:600;font-size:0.85rem;padding:0.4rem 0;">How do I add students?</summary><p style="font-size:0.8rem;color:var(--sub);padding:0.5rem 0;">Go to Students tab → tap ➕ Add Student. Or tap Import (CSV/Photo) to add many at once.</p></details>
+        <details style="margin-bottom:0.5rem;"><summary style="cursor:pointer;font-weight:600;font-size:0.85rem;padding:0.4rem 0;">How do I generate a report card?</summary><p style="font-size:0.8rem;color:var(--sub);padding:0.5rem 0;">Students → tap a student → Scores tab → enter CA and Exam scores → Report Card tab → Print.</p></details>
+        <details><summary style="cursor:pointer;font-weight:600;font-size:0.85rem;padding:0.4rem 0;">How do I upgrade to Premium?</summary><p style="font-size:0.8rem;color:var(--sub);padding:0.5rem 0;">Go to Settings tab → tap Upgrade to Premium → contact AariNAT via WhatsApp.</p></details>
+      </div>
+    </section>
+
+    <!-- 15. SETTINGS -->
+    <section id="sec-settings" class="sec">
+      <div class="card"><div class="ct">⚙️ School Settings</div>
+        <label>School Name</label><input type="text" id="set-name" placeholder="e.g. Bright Stars Academy">
+        <label>Principal's WhatsApp</label><input type="tel" id="set-phone" placeholder="2348012345678">
+        <label>Principal's Email</label><input type="email" id="set-email" placeholder="principal@school.edu.ng">
+        <label>Login Password</label><div class="pwd-wrap"><input type="password" id="set-pwd" placeholder="New password (leave blank to keep current)"><button type="button" class="eye-btn" onclick="toggleEye('set-pwd',this)" tabindex="-1">👁️</button></div>
+        <label>Default Termly Fee (₦)</label><input type="number" id="set-fee" placeholder="50000">
+        <label>Current Term</label><select id="set-term"><option>Term 1</option><option>Term 2</option><option>Term 3</option></select>
+        <label>Academic Session</label><input type="text" id="set-session" placeholder="e.g. 2025/2026">
+        <label>Subjects</label>
+        <div style="display:flex;gap:0.4rem;margin-bottom:0.4rem;flex-wrap:wrap;">
+          <button class="btn-ghost btn-sm" onclick="loadPresetSubjects('primary')" style="font-size:0.72rem;">📚 Primary</button>
+          <button class="btn-ghost btn-sm" onclick="loadPresetSubjects('jss')" style="font-size:0.72rem;">📚 JSS</button>
+          <button class="btn-ghost btn-sm" onclick="loadPresetSubjects('sss')" style="font-size:0.72rem;">📚 SSS</button>
+        </div>
+        <div id="subj-chips" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:0.5rem;min-height:28px;"></div>
+        <div style="display:flex;gap:0.4rem;margin-bottom:0.4rem;">
+          <input type="text" id="new-subj-inp" placeholder="Add subject…" style="flex:1;margin:0;font-size:0.82rem;" onkeydown="if(event.key==='Enter'){event.preventDefault();addSubjectFromInput();}">
+          <button class="btn-brand btn-sm" onclick="addSubjectFromInput()">+ Add</button>
+        </div>
+        <textarea id="set-subjects" rows="2" placeholder="Subjects (auto-updated above)" style="font-size:0.72rem;color:var(--sub);"></textarea>
+        <button class="btn-brand" onclick="saveSettings()">💾 Save Settings</button>
+      </div>
+      <div class="card" style="border-left:4px solid var(--warn);"><div class="ct">Current Plan: <span id="settings-plan">Basic</span></div><p style="font-size:0.82rem;color:var(--sub);">Staff limit: <span id="settings-staff-limit">3</span> · Finance AI: <span id="settings-ai">Basic</span></p><button class="btn-brand" style="margin-top:0.65rem;" onclick="openUpgradeModal()">✨ Upgrade to Premium</button></div>
+      <div class="card" style="border-left:4px solid var(--brand);"><div class="ct">🏫 School Branding</div>
+        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.85rem;">
+          <div id="settings-logo-preview" style="width:72px;height:72px;border-radius:50%;background:var(--s2);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.5rem;color:var(--sub);background-size:cover;background-position:center;overflow:hidden;flex-shrink:0;"><span id="settings-logo-initial">S</span></div>
+          <div style="flex:1;min-width:0;"><div style="font-size:0.82rem;font-weight:700;" id="settings-logo-name">No logo uploaded</div><div style="font-size:0.72rem;color:var(--sub);margin-top:2px;">Accepts PNG, JPG, WebP.</div></div>
+        </div>
+        <input type="file" id="logo-file-input" accept="image/*" style="display:none;" onchange="handleLogoUpload(event)">
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;"><button class="btn-brand btn-sm" onclick="document.getElementById('logo-file-input').click()">📸 Upload Logo</button><button class="btn-ghost btn-sm" style="color:var(--danger);" onclick="removeLogo()">🗑️ Remove</button></div>
+      </div>
+      <div class="card" style="border-left:4px solid #2563eb;"><div class="ct">🛡️ Privacy & Data Protection</div><p style="font-size:0.8rem;color:var(--sub);margin-bottom:0.65rem;line-height:1.6;">EduBloom is compliant with the <strong>Nigeria Data Protection Act 2023 (NDPA)</strong>. Your data is stored securely and never shared with third parties.</p><button class="btn-ghost" style="color:var(--text);width:100%;" onclick="openM('privacy-modal')">📄 Read Full Privacy Policy</button></div>
+    </section>
+
+    <!-- 16. OPPORTUNITIES -->
+    <section id="sec-opps" class="sec">
+      <div class="card"><div class="ct">🔍 Opportunity Scout</div><p style="font-size:0.8rem;color:var(--sub);margin-bottom:0.65rem;">Scholarships, grants and competitions for Nigerian students and schools.</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;margin-bottom:0.65rem;"><select id="opp-cat" onchange="renderOpps()" style="margin:0;font-size:0.8rem;padding:0.5rem;"><option value="">All Types</option><option value="scholarship">Scholarships</option><option value="grant">Grants</option><option value="competition">Competitions</option><option value="internship">Internships</option></select><select id="opp-deadline" onchange="renderOpps()" style="margin:0;font-size:0.8rem;padding:0.5rem;"><option value="">Any Deadline</option><option value="7">Next 7 days</option><option value="30">Next 30 days</option></select></div><div id="opps-list"></div></div>
+    </section>
+
+    <!-- 17. SCORECARD -->
+    <section id="sec-scorecard" class="sec"><div id="scorecard-content"></div></section>
+
+    <!-- 18. AI TOOLS -->
+    <section id="sec-aitools" class="sec">
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:1rem;">
+        <div style="background:linear-gradient(135deg,#4B0082,#6E1F8B);padding:14px 16px;"><div style="color:#fff;font-weight:800;font-size:1rem;">🤖 AI Tools Suite</div><div style="color:#DDD6FE;font-size:0.74rem;margin-top:2px;">4 AI agents powered by Gemini · EduBloom</div></div>
+        <div style="display:flex;overflow-x:auto;background:var(--s1);border-bottom:1px solid var(--border);scrollbar-width:none;">
+          <button class="ai-stab active" onclick="aitab('onboard')" id="at-onboard" style="flex:1;min-width:70px;padding:9px 6px;border:none;cursor:pointer;background:transparent;font-size:0.74rem;font-weight:700;color:var(--text);border-bottom:2px solid #4B0082;font-family:inherit;white-space:nowrap;">🏫 Onboard</button>
+          <button class="ai-stab" onclick="aitab('finance')" id="at-finance" style="flex:1;min-width:70px;padding:9px 6px;border:none;cursor:pointer;background:transparent;font-size:0.74rem;font-weight:700;color:var(--sub);border-bottom:2px solid transparent;font-family:inherit;white-space:nowrap;">📊 Finance</button>
+          <button class="ai-stab" onclick="aitab('reports')" id="at-reports" style="flex:1;min-width:70px;padding:9px 6px;border:none;cursor:pointer;background:transparent;font-size:0.74rem;font-weight:700;color:var(--sub);border-bottom:2px solid transparent;font-family:inherit;white-space:nowrap;">📝 Reports</button>
+          <button class="ai-stab" onclick="aitab('comms')" id="at-comms" style="flex:1;min-width:70px;padding:9px 6px;border:none;cursor:pointer;background:transparent;font-size:0.74rem;font-weight:700;color:var(--sub);border-bottom:2px solid transparent;font-family:inherit;white-space:nowrap;">💬 Comms</button>
+        </div>
+        <div id="ait-onboard" style="display:block;"><div id="ait-chat-win" style="padding:14px;display:flex;flex-direction:column;gap:10px;min-height:260px;max-height:340px;overflow-y:auto;background:var(--s1);"></div><div style="padding:8px 10px;background:var(--s2);border-top:1px solid var(--border);display:flex;gap:7px;"><input id="ait-chat-in" placeholder="Type your reply…" style="flex:1;border:1px solid var(--border);border-radius:8px;padding:8px 11px;font-size:0.82rem;background:var(--bg);color:var(--text);font-family:inherit;outline:none;" onkeydown="if(event.key==='Enter')aitSend()"><button onclick="aitSend()" style="background:#4B0082;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:0.8rem;font-weight:700;cursor:pointer;">Send</button></div></div>
+        <div id="ait-finance" style="display:none;padding:14px;"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;" id="ait-fin-metrics"><div style="background:var(--s2);border-radius:8px;padding:8px;text-align:center;border:1px solid var(--border);"><div style="font-size:9px;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Collection Rate</div><div id="ait-fin-rate" style="font-size:1.2rem;font-weight:800;color:#15803D;">—</div></div><div style="background:var(--s2);border-radius:8px;padding:8px;text-align:center;border:1px solid var(--border);"><div style="font-size:9px;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Outstanding</div><div id="ait-fin-owed" style="font-size:1.2rem;font-weight:800;color:#DC2626;">—</div></div><div style="background:var(--s2);border-radius:8px;padding:8px;text-align:center;border:1px solid var(--border);"><div style="font-size:9px;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Students</div><div id="ait-fin-count" style="font-size:1.2rem;font-weight:800;color:var(--brand);">—</div></div></div><button onclick="aitRunFinance()" id="ait-fin-btn" style="width:100%;background:#7A5C1E;color:#fff;border:none;border-radius:8px;padding:10px;font-size:0.85rem;font-weight:700;cursor:pointer;margin-bottom:10px;">🔍 Analyse This Term's Finances</button><div id="ait-fin-out"></div></div>
+        <div id="ait-reports" style="display:none;padding:14px;"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;"><div><label style="font-size:10px;font-weight:700;color:#7A5C1E;text-transform:uppercase;letter-spacing:1.2px;display:block;margin-bottom:4px;">Student Name</label><input id="ait-rc-name" placeholder="e.g. Adaobi Chukwu" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:0.8rem;background:var(--bg);color:var(--text);font-family:inherit;outline:none;box-sizing:border-box;"></div><div><label style="font-size:10px;font-weight:700;color:#7A5C1E;text-transform:uppercase;letter-spacing:1.2px;display:block;margin-bottom:4px;">Class</label><input id="ait-rc-class" placeholder="e.g. JSS 2" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:0.8rem;background:var(--bg);color:var(--text);font-family:inherit;outline:none;box-sizing:border-box;"></div><div><label style="font-size:10px;font-weight:700;color:#7A5C1E;text-transform:uppercase;letter-spacing:1.2px;display:block;margin-bottom:4px;">Attendance %</label><input id="ait-rc-att" type="number" placeholder="e.g. 88" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:0.8rem;background:var(--bg);color:var(--text);font-family:inherit;outline:none;box-sizing:border-box;"></div><div><label style="font-size:10px;font-weight:700;color:#7A5C1E;text-transform:uppercase;letter-spacing:1.2px;display:block;margin-bottom:4px;">Term</label><input id="ait-rc-term" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:0.8rem;background:var(--bg);color:var(--text);font-family:inherit;outline:none;box-sizing:border-box;"></div></div><div style="margin-bottom:10px;"><label style="font-size:10px;font-weight:700;color:#7A5C1E;text-transform:uppercase;letter-spacing:1.2px;display:block;margin-bottom:4px;">Subject Scores (Subject: Score, …)</label><textarea id="ait-rc-subs" rows="2" placeholder="English: 72, Maths: 58, Science: 81…" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:0.8rem;background:var(--bg);color:var(--text);font-family:inherit;outline:none;box-sizing:border-box;resize:vertical;"></textarea></div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button onclick="aitGenReport()" id="ait-rc-btn" style="flex:1;min-width:120px;background:#15803D;color:#fff;border:none;border-radius:8px;padding:9px;font-size:0.82rem;font-weight:700;cursor:pointer;">✍️ Generate Comment</button><button onclick="aitRcFromStudent()" style="flex:1;min-width:120px;background:transparent;color:#15803D;border:2px solid #15803D;border-radius:8px;padding:9px;font-size:0.78rem;font-weight:700;cursor:pointer;">🎓 Use Active Student</button></div><div id="ait-rc-out" style="margin-top:10px;"></div></div>
+        <div id="ait-comms" style="display:none;padding:14px;"><div style="margin-bottom:10px;"><label style="font-size:10px;font-weight:700;color:#1D4ED8;text-transform:uppercase;letter-spacing:1.2px;display:block;margin-bottom:6px;">Scenario</label><div style="display:flex;flex-wrap:wrap;gap:5px;" id="ait-comms-scenarios"><button class="ait-sc-btn active" onclick="aitSetScenario('fee',this)" style="background:#1D4ED8;color:#fff;border:1px solid #1D4ED8;border-radius:16px;padding:4px 11px;font-size:0.72rem;cursor:pointer;font-family:inherit;font-weight:700;">💰 Fee Reminder</button><button class="ait-sc-btn" onclick="aitSetScenario('absent',this)" style="background:transparent;color:#1D4ED8;border:1px solid #BFDBFE;border-radius:16px;padding:4px 11px;font-size:0.72rem;cursor:pointer;font-family:inherit;font-weight:700;">📋 Absence Alert</button><button class="ait-sc-btn" onclick="aitSetScenario('collector',this)" style="background:transparent;color:#1D4ED8;border:1px solid #BFDBFE;border-radius:16px;padding:4px 11px;font-size:0.72rem;cursor:pointer;font-family:inherit;font-weight:700;">🛡 Unlisted Collector</button><button class="ait-sc-btn" onclick="aitSetScenario('report',this)" style="background:transparent;color:#1D4ED8;border:1px solid #BFDBFE;border-radius:16px;padding:4px 11px;font-size:0.72rem;cursor:pointer;font-family:inherit;font-weight:700;">📝 Report Ready</button></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;" id="ait-comms-fields"></div><button onclick="aitGenComms()" id="ait-comms-btn" style="width:100%;background:#1D4ED8;color:#fff;border:none;border-radius:8px;padding:10px;font-size:0.85rem;font-weight:700;cursor:pointer;">💬 Draft WhatsApp Message</button><div id="ait-comms-out" style="margin-top:10px;"></div></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- BOTTOM NAV -->
+  <nav class="nav">
+    <button class="nlink on" data-t="revenue" onclick="go('revenue')"><span class="ni">💰</span>Revenue</button>
+    <button class="nlink" data-t="students" onclick="go('students')"><span class="ni">🎓</span>Students</button>
+    <button class="nlink" data-t="staff" onclick="go('staff')"><span class="ni">👥</span>Staff</button>
+    <button class="nlink" data-t="sports" onclick="go('sports')"><span class="ni">⚽</span>Sports</button>
+    <button class="nlink" data-t="arts" onclick="go('arts')"><span class="ni">🎨</span>Arts</button>
+    <button class="nlink" data-t="music" onclick="go('music')"><span class="ni">🎵</span>Music</button>
+    <button class="nlink" data-t="health" onclick="go('health')"><span class="ni">🏥</span>Health</button>
+    <button class="nlink" data-t="alumni" onclick="go('alumni')"><span class="ni">🎓</span>Alumni</button>
+    <button class="nlink" data-t="expenses" onclick="go('expenses')"><span class="ni">📉</span>Expenses</button>
+    <button class="nlink" data-t="finance" onclick="go('finance')"><span class="ni">🤖</span>Finance AI</button>
+    <button class="nlink" data-t="comms" onclick="go('comms')"><span class="ni">📢</span>Comms</button>
+    <button class="nlink" data-t="analytics" onclick="go('analytics')"><span class="ni">📊</span>Analytics</button>
+    <button class="nlink" data-t="security" onclick="go('security')"><span class="ni">🔒</span>Security</button>
+    <button class="nlink" data-t="support" onclick="go('support')"><span class="ni">❓</span>Support</button>
+    <button class="nlink" data-t="settings" onclick="go('settings')"><span class="ni">⚙️</span>Settings</button>
+    <button class="nlink" data-t="scorecard" onclick="go('scorecard')"><span class="ni">📋</span>Scorecard</button>
+    <button class="nlink" data-t="opps" onclick="go('opps')"><span class="ni">🔍</span>Scout</button>
+    <button class="nlink" data-t="aitools" onclick="go('aitools')"><span class="ni">🤖</span>AI Tools</button>
+  </nav>
+</div>
+
+<!-- ══ MODALS ══════════════════════════════════════════════════════════ -->
+
+<!-- OCR Review Modal -->
+<div class="modal" id="ocr-review-modal">
+  <div class="mbox" style="max-width:500px;width:96%;max-height:92vh;display:flex;flex-direction:column;padding:1rem;">
+    <button class="mclose" onclick="closeM('ocr-review-modal')">✕</button>
+    <div class="ct" style="margin-bottom:0.3rem;">📋 Review Before Importing</div>
+    <div id="ocr-review-info" style="font-size:0.74rem;color:var(--sub);margin-bottom:0.65rem;line-height:1.4;"></div>
+    <div style="display:flex;gap:6px;margin-bottom:0.5rem;flex-shrink:0;flex-wrap:wrap;">
+      <button onclick="ocrSelectAll(true)" style="background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:0.75rem;font-weight:700;cursor:pointer;color:var(--text);">✓ All</button>
+      <button onclick="ocrSelectAll(false)" style="background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:0.75rem;font-weight:700;cursor:pointer;color:var(--sub);">✗ None</button>
+      <input id="ocr-class-all" placeholder="Set class for all" onchange="ocrSetClassAll()" style="flex:1;min-width:120px;border:1px solid var(--border);border-radius:7px;padding:5px 8px;font-size:0.75rem;background:var(--bg);color:var(--text);font-family:inherit;outline:none;">
+    </div>
+    <div id="ocr-review-list" style="overflow-y:auto;flex:1;border:1px solid var(--border);border-radius:8px;min-height:200px;max-height:52vh;"></div>
+    <button id="ocr-confirm-btn" onclick="ocrConfirmImport()" style="margin-top:0.75rem;width:100%;background:var(--brand);color:#fff;border:none;border-radius:10px;padding:13px;font-size:0.92rem;font-weight:800;cursor:pointer;font-family:inherit;flex-shrink:0;">✅ Add 0 Students</button>
+  </div>
+</div>
+
+<!-- Student Profile Modal -->
+<div class="modal" id="student-modal">
+  <div class="mbox">
+    <div class="mhead">
+      <div class="prof-hdr" style="flex:1;margin-right:0.5rem;">
+        <div style="font-weight:800;font-size:1rem;" id="prof-name">Student</div>
+        <div style="font-size:0.75rem;opacity:0.85;" id="prof-meta">—</div>
+        <div id="prof-bday" style="display:none;font-size:0.72rem;color:#c084fc;font-weight:700;margin-top:3px;"></div>
+      </div>
+      <div style="display:flex;gap:5px;align-items:center;flex-shrink:0;">
+        <button onclick="editStudent(activeIdx)" style="background:none;border:1px solid rgba(255,255,255,0.3);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:0.82rem;color:inherit;">✏️</button>
+        <button onclick="deleteStudent(activeIdx)" style="background:none;border:1px solid rgba(255,255,255,0.3);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:0.82rem;color:inherit;">🗑️</button>
+        <button class="mclose" onclick="closeM('student-modal')">×</button>
+      </div>
+    </div>
+    <div class="profile-tabs">
+      <button class="ptab on" data-pt="fees" onclick="setTab('fees')">💰 Fees</button>
+      <button class="ptab" data-pt="attendance" onclick="setTab('attendance')">📅 Attendance</button>
+      <button class="ptab" data-pt="scores" onclick="setTab('scores')">📚 Scores</button>
+      <button class="ptab" data-pt="report" onclick="setTab('report')">📋 Report Card</button>
+      <button class="ptab" data-pt="swot" onclick="setTab('swot')">🧠 SWOT</button>
+      <button class="ptab" data-pt="safety" onclick="setTab('safety')">🛡️ Safety</button>
+    </div>
+    <div id="profile-content"></div>
+  </div>
+</div>
+
+<!-- Add Student -->
+<div class="modal" id="add-student-modal"><div class="mbox"><div class="mhead"><h3 style="font-size:0.95rem;font-weight:800;">➕ Add Student</h3><button class="mclose" onclick="closeM('add-student-modal')">×</button></div><label>Full Name</label><input type="text" id="ns-name" placeholder="e.g. Adebayo Okonkwo"><label>Parent's WhatsApp</label><input type="tel" id="ns-phone" placeholder="2348012345678"><label>Date of Birth <span style="font-size:0.68rem;color:var(--sub);">(optional — for birthday wishes)</span></label><input type="date" id="ns-dob"><label>Class</label><input type="text" id="ns-class" placeholder="e.g. JSS 2, Primary 4"><label>Termly Fee (₦) — blank uses default</label><input type="number" id="ns-fee" placeholder="Leave blank for default"><button class="btn-brand" onclick="addStudent()">✅ Add Student</button></div></div>
+
+<!-- Add Staff -->
+<div class="modal" id="add-staff-modal"><div class="mbox"><div class="mhead"><h3 style="font-size:0.95rem;font-weight:800;">👤 Add Staff</h3><button class="mclose" onclick="closeM('add-staff-modal')">×</button></div><label>Full Name</label><input type="text" id="sf-name" placeholder="e.g. Mrs. Adunola Bello"><label>Email (login email)</label><input type="email" id="sf-email" placeholder="teacher@school.edu.ng"><label>Password</label><div class="pwd-wrap"><input type="password" id="sf-pwd" placeholder="Min 4 characters"><button type="button" class="eye-btn" onclick="toggleEye('sf-pwd',this)" tabindex="-1">👁️</button></div><label>Role</label><select id="sf-role" onchange="onRoleChange(this)"><option value="Class Teacher">Class Teacher</option><option value="Subject Teacher">Subject Teacher</option><option value="Bursar">Bursar</option><option value="Principal">Principal</option></select><div id="sf-class-row" style="display:block;"><label>Assigned Class <span style="font-size:0.68rem;color:var(--sub);">(required for Class Teacher)</span></label><input type="text" id="sf-class" placeholder="e.g. JSS 1A"></div><div id="sf-subjects-row" style="display:none;"><label>Assigned Subjects <span style="font-size:0.68rem;color:var(--sub);">(comma-separated)</span></label><input type="text" id="sf-subjects" placeholder="e.g. Mathematics, English"></div><button class="btn-brand" onclick="addStaff()">✅ Add Staff</button></div></div>
+
+<!-- Add Expense -->
+<div class="modal" id="add-expense-modal"><div class="mbox"><div class="mhead"><h3 style="font-size:0.95rem;font-weight:800;">📉 Log Expense</h3><button class="mclose" onclick="closeM('add-expense-modal')">×</button></div><label>Category</label><select id="exp-cat"><option>Staff Salaries</option><option>Utilities (NEPA/Generator)</option><option>Building Maintenance</option><option>Teaching Materials</option><option>Government/Ministry Fees</option><option>Cleaning & Security</option><option>Transport</option><option>Examination Fees</option><option>Other</option></select><label>Description</label><input type="text" id="exp-desc" placeholder="e.g. Generator servicing"><label>Amount (₦)</label><input type="number" id="exp-amt" placeholder="e.g. 45000"><button class="btn-brand" onclick="addExpense()">💾 Save Expense</button></div></div>
+
+<!-- Custom Sport -->
+<div class="modal" id="custom-sport-modal"><div class="mbox"><div class="mhead"><h3 style="font-size:0.95rem;font-weight:800;">➕ Add Custom Sport</h3><button class="mclose" onclick="closeM('custom-sport-modal')">×</button></div><label>Sport Name</label><input type="text" id="cs-name" placeholder="e.g. Swimming, Handball"><label>Icon (emoji)</label><input type="text" id="cs-icon" placeholder="e.g. 🏊" maxlength="2"><label>Description</label><input type="text" id="cs-desc" placeholder="e.g. Indoor pool, ages 10–17"><button class="btn-brand" onclick="addCustomSport()">💾 Add Sport</button></div></div>
+
+<!-- Add Player -->
+<div class="modal" id="add-player-modal"><div class="mbox"><div class="mhead"><h3 style="font-size:0.95rem;font-weight:800;">➕ Add Player</h3><button class="mclose" onclick="closeM('add-player-modal')">×</button></div><label>Select Student</label><select id="player-sel"><option value="">— Choose student —</option></select><label>Position/Role</label><input type="text" id="player-pos" placeholder="e.g. Striker, Goalkeeper"><label>Jersey Number</label><input type="number" id="player-num" placeholder="e.g. 10" min="1" max="99"><button class="btn-sports" onclick="addPlayer()">💾 Add to Team</button></div></div>
+
+<!-- Add Artwork -->
+<div class="modal" id="add-artwork-modal"><div class="mbox"><div class="mhead"><h3 style="font-size:0.95rem;font-weight:800;">🎨 Add Artwork</h3><button class="mclose" onclick="closeM('add-artwork-modal')">×</button></div><label>Student</label><select id="art-stu-sel"><option value="">— Choose student —</option></select><label>Artwork Title</label><input type="text" id="art-title" placeholder="e.g. Sunset Over Lagos"><label>Medium</label><select id="art-medium"><option>Drawing</option><option>Painting</option><option>Sculpture</option><option>Beadwork</option><option>Textile</option><option>Photography</option><option>Other</option></select><label>Description</label><textarea id="art-desc" rows="2" placeholder="Brief description"></textarea><button class="btn-arts" onclick="saveArtwork()">💾 Save Artwork</button></div></div>
+
+<!-- Log Practice -->
+<div class="modal" id="log-practice-modal"><div class="mbox"><div class="mhead"><h3 style="font-size:0.95rem;font-weight:800;">📝 Log Practice</h3><button class="mclose" onclick="closeM('log-practice-modal')">×</button></div><label>Student</label><select id="prac-stu"><option value="">— Choose student —</option></select><label>Activity</label><input type="text" id="prac-act" placeholder="e.g. Piano practice, Choir rehearsal"><label>Duration</label><select id="prac-dur"><option>30 mins</option><option>45 mins</option><option>1 hour</option><option>1.5 hours</option><option>2 hours</option></select><label>Notes</label><textarea id="prac-notes" rows="2" placeholder="Progress made, areas to improve..."></textarea><button class="btn-music" onclick="savePractice()">💾 Save Log</button></div></div>
+
+<!-- Book Lesson -->
+<div class="modal" id="book-lesson-modal"><div class="mbox"><div class="mhead"><h3 style="font-size:0.95rem;font-weight:800;">🎹 Book Lesson</h3><button class="mclose" onclick="closeM('book-lesson-modal')">×</button></div><label>Student</label><select id="lesson-stu"><option value="">— Choose student —</option></select><label>Instrument</label><select id="lesson-inst"><option>Piano</option><option>Guitar</option><option>Keyboard</option><option>Talking Drum</option><option>Vocals</option><option>Other</option></select><label>Date</label><input type="date" id="lesson-date"><label>Time Slot</label><select id="lesson-time"><option>3:00–4:00 PM</option><option>4:00–5:00 PM</option><option>5:00–6:00 PM</option></select><button class="btn-music" onclick="bookLesson()">📅 Confirm Booking</button></div></div>
+
+<!-- Instrument Inventory -->
+<div class="modal" id="instrument-modal"><div class="mbox"><div class="mhead"><h3 style="font-size:0.95rem;font-weight:800;">🎸 Instrument Inventory</h3><button class="mclose" onclick="closeM('instrument-modal')">×</button></div><div id="instrument-list"></div><button class="btn-brand btn-sm" style="margin-top:0.65rem;" onclick="addInstrument()">➕ Add Instrument</button></div></div>
+
+<!-- Log Incident -->
+<div class="modal" id="log-incident-modal"><div class="mbox"><div class="mhead"><h3 style="font-size:0.95rem;font-weight:800;">🏥 Log Incident</h3><button class="mclose" onclick="closeM('log-incident-modal')">×</button></div><label>Student</label><select id="inc-stu"><option value="">— Choose student —</option></select><label>Incident / Condition</label><input type="text" id="inc-type" placeholder="e.g. Malaria, Injury, Headache"><label>Action Taken</label><select id="inc-action"><option>Given first aid</option><option>Sent home</option><option>Parent called</option><option>Referred to hospital</option><option>Monitored in sick bay</option></select><label>Notes</label><textarea id="inc-notes" rows="2" placeholder="Additional details..."></textarea><button class="btn-brand" onclick="logIncident()">💾 Save Incident</button></div></div>
+
+<!-- Add Alumni -->
+<div class="modal" id="add-alumni-modal"><div class="mbox"><div class="mhead"><h3 style="font-size:0.95rem;font-weight:800;">🎓 Add Alumni</h3><button class="mclose" onclick="closeM('add-alumni-modal')">×</button></div><label>Full Name</label><input type="text" id="al-name" placeholder="e.g. Adebayo Okonkwo"><label>Graduation Year</label><input type="number" id="al-year" placeholder="e.g. 2020"><label>WhatsApp</label><input type="tel" id="al-phone" placeholder="2348012345678"><label>Current Occupation</label><input type="text" id="al-job" placeholder="e.g. Engineer at Dangote Group"><button class="btn-brand" onclick="addAlumni()">✅ Add Alumni</button></div></div>
+
+<!-- Comms History -->
+<div class="modal" id="comms-history-modal"><div class="mbox"><div class="mhead"><h3 style="font-size:0.95rem;font-weight:800;">📜 Message History</h3><button class="mclose" onclick="closeM('comms-history-modal')">×</button></div><div id="comms-history-list"><p style="text-align:center;color:var(--sub);padding:2rem;">No messages sent yet.</p></div></div></div>
+
+<!-- Upgrade Modal (single — duplicate removed) -->
+<div class="modal" id="upgrade-modal">
+  <div class="mbox">
+    <div class="mhead"><h3 style="font-size:0.95rem;font-weight:800;">✨ Plan & Upgrade</h3><button class="mclose" onclick="closeM('upgrade-modal')">×</button></div>
+    <div style="background:linear-gradient(135deg,#eff6ff,#f0fdf4);border-radius:12px;padding:1rem;margin-bottom:0.75rem;">
+      <div style="font-size:0.72rem;color:var(--sub);text-transform:uppercase;letter-spacing:1px;">Current Plan</div>
+      <div style="font-weight:800;font-size:1.05rem;margin-top:2px;" id="up-plan-name">—</div>
+      <div style="font-size:0.78rem;color:var(--sub);margin-top:3px;" id="up-tier-info">—</div>
+      <div style="font-size:0.78rem;color:var(--sub);margin-top:2px;" id="up-student-info">—</div>
+    </div>
+    <button onclick="refreshPlanFromFirestore(this)" style="width:100%;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:0.65rem;font-size:0.85rem;font-weight:700;color:#2563eb;cursor:pointer;margin-bottom:0.75rem;">🔄 Refresh Plan (after payment)</button>
+    <div style="font-size:0.75rem;font-weight:700;color:var(--sub);margin-bottom:0.4rem;">PRICING TIERS</div>
+    <div id="up-tier-table" style="font-size:0.78rem;"></div>
+    <button onclick="contactAdminForUpgrade();closeM('upgrade-modal');" style="width:100%;background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;border:none;border-radius:10px;padding:0.75rem;font-size:0.88rem;font-weight:700;cursor:pointer;margin-top:0.75rem;">📞 Contact Agent to Upgrade</button>
+  </div>
+</div>
+
+<!-- Privacy Modal -->
+<div class="modal" id="privacy-modal"><div class="mbox" style="max-height:90vh;overflow-y:auto;"><div class="mhead"><h3 style="font-size:0.95rem;font-weight:800;">🛡️ Privacy Policy & Data Protection</h3><button class="mclose" onclick="closeM('privacy-modal')">×</button></div><div style="font-size:0.7rem;background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.3);border-radius:8px;padding:0.6rem;margin-bottom:1rem;color:#60a5fa;">Compliant with the <strong>Nigeria Data Protection Act 2023 (NDPA)</strong><br>Regulated by the <strong>Nigeria Data Protection Commission (NDPC)</strong></div><div style="font-size:0.82rem;color:var(--text);line-height:1.7;"><p><strong>Data Controller:</strong> AariNAT Company Limited (RC-1732521), Abeokuta, Ogun State, Nigeria. +234 814 507 3941.</p><p><strong>What we collect:</strong> Student records (name, class, scores, attendance), parent/guardian WhatsApp contacts, staff records, school financial data.</p><p><strong>Why:</strong> Solely to deliver the EduBloom school management service. We do not sell or share personal data with advertisers.</p><p><strong>Who has access:</strong> Your school staff (role-restricted), AariNAT admin (technical support only), Google Firebase (data storage processor).</p><p><strong>Retention:</strong> Data held for duration of subscription plus max 24 months. Then permanently deleted.</p><p><strong>Your NDPA rights:</strong> Access, Correction, Deletion, Objection, Portability. Contact aarinat.company.limited@gmail.com to exercise rights.</p><p><strong>Complaints:</strong> Nigeria Data Protection Commission — ndpc.gov.ng</p></div><button class="btn-ghost" style="color:var(--text);margin-top:0.75rem;width:100%;" onclick="closeM('privacy-modal')">Close</button></div></div>
+
+<!-- Class Attendance Modal -->
+<div id="class-att-modal" class="modal"><div class="mbox" style="max-height:92vh;overflow-y:auto;"><div class="mhdr">📅 Class Attendance Register</div><div style="display:flex;gap:0.4rem;margin-bottom:0.6rem;"><select id="ca-class-sel" onchange="renderClassRoll()" style="flex:1;margin:0;font-size:0.82rem;"></select><input type="date" id="ca-date" onchange="renderClassRoll()" style="margin:0;font-size:0.82rem;flex:1;"></div><div class="ca-summary-bar"><span id="ca-summary" style="font-weight:700;font-size:0.85rem;color:var(--money);"></span><div style="display:flex;gap:0.4rem;flex-wrap:wrap;"><button style="font-size:0.72rem;color:var(--brand);font-weight:700;cursor:pointer;text-decoration:underline;background:none;border:none;padding:0;" onclick="markAllPresent()">✅ All Present</button><button style="font-size:0.72rem;color:var(--danger);font-weight:700;cursor:pointer;text-decoration:underline;background:none;border:none;padding:0;" onclick="markAllAbsent()">❌ All Absent</button><button style="font-size:0.72rem;color:var(--warn);font-weight:700;cursor:pointer;text-decoration:underline;background:none;border:none;padding:0;" onclick="notifyAbsentParents()">📲 Notify Absent</button></div></div><div id="ca-list"></div><button class="btn-brand" style="margin-top:0.75rem;" onclick="saveClassAttendance()">💾 Save Attendance</button><button class="btn-ghost btn-sm" style="margin-top:0.4rem;" onclick="closeM('class-att-modal')">Close</button></div></div>
+
+<!-- Subject Scores Modal -->
+<div id="subj-scores-modal" class="modal"><div class="mbox" style="max-height:92vh;overflow-y:auto;"><div class="mhdr">📚 Enter Scores by Subject</div><div style="display:flex;gap:0.4rem;margin-bottom:0.6rem;"><select id="ss-class-sel" onchange="renderSubjectScoreList()" style="flex:1;margin:0;font-size:0.82rem;"></select><select id="ss-subj-sel" onchange="renderSubjectScoreList()" style="flex:1;margin:0;font-size:0.82rem;"></select></div><div id="ss-list"></div><button class="btn-brand" style="margin-top:0.75rem;" onclick="saveSubjectScores()">💾 Save Scores</button><button class="btn-ghost btn-sm" style="margin-top:0.4rem;" onclick="closeM('subj-scores-modal')">Close</button></div></div>
+
+<!-- Bulk WA Reminder -->
+<div id="bulk-wa-modal" class="modal"><div class="mbox"><div class="mhdr">📲 Send Fee Reminders</div><div class="bwa-stat" id="bwa-progress">1 of —</div><div class="bwa-progress-bar"><div class="bwa-pct" id="bwa-pct" style="width:0%;"></div></div><div class="bwa-card"><div class="bwa-name-big" id="bwa-name">—</div><div class="bwa-owe-big" id="bwa-owe">—</div><div class="bwa-phone-sm" id="bwa-phone">—</div><button class="btn-wa" id="bwa-open-btn">📲 Open WhatsApp</button></div><p style="font-size:0.72rem;color:var(--sub);text-align:center;margin-bottom:0.65rem;">Tap Open WhatsApp → send → come back → tap Next</p><div style="display:flex;gap:0.5rem;"><button class="btn-brand" style="flex:1;" onclick="nextBulkWA()">Next ▶</button><button class="btn-ghost btn-sm" onclick="closeBulkWA()">Done</button></div></div></div>
+
+<!-- Bulk Report Cards -->
+<div id="bulk-rc-modal" class="modal"><div class="mbox"><div class="mhdr">📋 Send Report Cards</div><div class="bwa-stat" id="brc-progress">1 of —</div><div class="bwa-progress-bar"><div class="bwa-pct" id="brc-pct" style="width:0%;"></div></div><div class="bwa-card"><div class="bwa-name-big" id="brc-name">—</div><div class="bwa-phone-sm" id="brc-phone">—</div><button class="btn-wa" id="brc-open-btn">📲 Open WhatsApp</button></div><p style="font-size:0.72rem;color:var(--sub);text-align:center;margin-bottom:0.65rem;">Tap Open WhatsApp → send → come back → tap Next</p><div style="display:flex;gap:0.5rem;"><button class="btn-brand" style="flex:1;" onclick="nextBulkRC()">Next ▶</button><button class="btn-ghost btn-sm" onclick="closeBulkRC()">Done</button></div></div></div>
+
+<!-- Score OCR Modal -->
+<div id="score-ocr-modal" class="modal"><div class="mbox" style="max-height:94vh;overflow-y:auto;"><div class="mhdr">📸 Scan Score Sheet</div><p style="font-size:0.78rem;color:var(--sub);margin-bottom:0.75rem;">Photograph a class score sheet. Gemini reads the names and scores automatically.</p><div style="display:flex;gap:0.4rem;margin-bottom:0.6rem;flex-wrap:wrap;"><select id="socr-class" style="flex:1;min-width:120px;margin:0;font-size:0.82rem;"></select><select id="socr-subj" style="flex:2;min-width:140px;margin:0;font-size:0.82rem;"></select><select id="socr-term" style="flex:0 0 90px;margin:0;font-size:0.82rem;"><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select></div><input type="file" id="socr-img-input" accept="image/*" capture="environment" style="display:none;" onchange="socrHandleImage(event)"><button class="btn-brand" onclick="socrPickPhoto()" style="margin-bottom:0.5rem;">📷 Take Photo / Choose Image</button><div id="socr-status" style="font-size:0.8rem;margin-bottom:0.5rem;min-height:1.2rem;"></div><div id="socr-preview"></div><button id="socr-save-btn" class="btn-money" style="display:none;margin-top:0.75rem;" onclick="socrSaveScores()">💾 Save These Scores</button><button class="btn-ghost btn-sm" style="margin-top:0.4rem;" onclick="closeM('score-ocr-modal')">Cancel</button></div></div>
+
+<!-- Script Scan Modal -->
+<div id="script-scan-modal" class="modal"><div class="mbox" style="max-height:94vh;overflow-y:auto;"><div class="mhdr">📝 Scan Marked Scripts</div><p style="font-size:0.78rem;color:var(--sub);margin-bottom:0.65rem;">Point camera at each marked paper. Gemini reads the student name and score, then scan the next one.</p><div style="display:flex;gap:0.4rem;align-items:center;margin-bottom:0.65rem;background:var(--s2);padding:0.6rem;border-radius:10px;"><span style="font-size:0.78rem;font-weight:700;color:var(--sub);white-space:nowrap;">Subject:</span><select id="scan-subj" onchange="scanSubjChanged()" style="flex:1;margin:0;font-size:0.85rem;font-weight:700;"></select></div><input type="file" id="scan-img-input" accept="image/*" capture="environment" style="display:none;" onchange="handleScriptImage(event)"><button class="btn-brand" onclick="triggerScriptScan()" style="font-size:1rem;padding:0.85rem;margin-bottom:0.6rem;">📷 Scan Next Paper</button><div id="scan-status" style="font-size:0.8rem;min-height:1.4rem;margin-bottom:0.4rem;text-align:center;"></div><div id="scan-queue-count" style="font-size:0.72rem;color:var(--sub);text-align:center;margin-bottom:0.4rem;"></div><div id="scan-result"></div><button class="btn-ghost btn-sm" style="margin-top:0.5rem;width:100%;" onclick="finishScriptScan()">✅ Done Scanning — Save All & Close</button></div></div>
+
+<!-- app.js loaded last so all DOM elements exist -->
+<script src="app.js"></script>
+
+<!-- ══ PWA Service Worker ══ -->
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js').then(reg=>{
+      console.log('[PWA] SW registered:',reg.scope);
+    }).catch(err=>console.warn('[PWA] SW failed:',err));
+  });
+}
+let _deferredInstall=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();_deferredInstall=e;
+  setTimeout(()=>{const b=document.getElementById('pwa-install-banner');if(b&&_deferredInstall)b.style.display='flex';},5000);
+});
+function installPWA(){if(!_deferredInstall)return;_deferredInstall.prompt();_deferredInstall.userChoice.then(()=>{_deferredInstall=null;const b=document.getElementById('pwa-install-banner');if(b)b.style.display='none';});}
+window.addEventListener('appinstalled',()=>{const b=document.getElementById('pwa-install-banner');if(b)b.style.display='none';});
+</script>
+
+<!-- ══ AI TOOLS SUITE (all calls use Gemini — no Anthropic key needed) ══ -->
+<script>
+// Gemini key from app.js global scope
+function getGeminiKey(){return(typeof GEMINI_KEY!=='undefined')?GEMINI_KEY:'';}
+
+async function geminiChat(prompt,systemPrompt){
+  const k=getGeminiKey(); if(!k) return 'Gemini API key not configured.';
+  try{
+    const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${k}`;
+    const sys=systemPrompt?`${systemPrompt}\n\n`:'';
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:sys+prompt}]}]})});
+    const d=await r.json();
+    return d.candidates?.[0]?.content?.parts?.[0]?.text||'No response received.';
+  }catch(e){return'Connection error: '+e.message;}
+}
+
+function aitab(id){
+  ['onboard','finance','reports','comms'].forEach(t=>{
+    const el=document.getElementById('ait-'+t),b=document.getElementById('at-'+t);
+    if(!el||!b)return;
+    el.style.display=t===id?'block':'none';
+    b.style.color=t===id?'var(--text)':'var(--sub)';
+    b.style.borderBottomColor=t===id?'#4B0082':'transparent';
+  });
+  if(id==='finance')aitPF();
+  if(id==='reports')aitPR();
+  if(id==='comms')aitRC();
+}
+
+// Onboarding chat
+const ACH=[];
+async function aitSend(){
+  const inp=document.getElementById('ait-chat-in');const t=(inp?.value||'').trim();if(!t)return;
+  inp.value='';ACH.push({role:'user',content:t});aitBub('user',t);
+  const tw=document.createElement('div');tw.id='ait-tw';tw.style.cssText='background:var(--s2);border:1px solid var(--border);border-radius:4px 12px 12px 12px;padding:9px 14px;font-size:0.8rem;color:var(--sub);';tw.textContent='Thinking...';
+  const w=document.getElementById('ait-chat-win');if(w)w.appendChild(tw);
+  const history=ACH.map(m=>`${m.role==='user'?'User':'Assistant'}: ${m.content}`).join('\n');
+  const sys=`You are EduBloom Onboarding Assistant for AariNAT Nigeria. Pricing/term: 1-50 ₦10k,51-100 ₦20k,101-200 ₦35k,201-350 ₦55k,351+ ₦75k. Collect school name, student count, WhatsApp, LGA. End with "Bayo (0814 507 3941) will call in 24h." Max 5 lines. End with question.`;
+  const reply=await geminiChat('Conversation so far:\n'+history+'\n\nRespond as Assistant:',sys);
+  const t2=document.getElementById('ait-tw');if(t2)t2.remove();
+  ACH.push({role:'assistant',content:reply});aitBub('bot',reply);
+}
+function aitBub(r,t){
+  const w=document.getElementById('ait-chat-win');if(!w)return;
+  const d=document.createElement('div');
+  d.style.cssText='padding:9px 12px;border-radius:12px;font-size:0.81rem;line-height:1.6;max-width:82%;white-space:pre-wrap;word-break:break-word;margin-bottom:2px;';
+  if(r==='user')d.style.cssText+='background:#4B0082;color:#fff;border-radius:12px 4px 12px 12px;margin-left:auto;';
+  else d.style.cssText+='background:var(--s2);color:var(--text);border:1px solid var(--border);border-radius:4px 12px 12px 12px;';
+  d.textContent=t;w.appendChild(d);w.scrollTop=w.scrollHeight;
+}
+function aitInitChat(){
+  const w=document.getElementById('ait-chat-win');if(!w||w.children.length)return;
+  const msg="Good day! I am the EduBloom Onboarding Assistant.\n\nI help schools get set up in 5 minutes — fees, attendance, report cards, safety alerts.\n\nWhat is the name of your school?";
+  ACH.push({role:'assistant',content:msg});aitBub('bot',msg);
+}
+
+// Finance advisor
+function aitFmtN(n){return'₦'+Number(n||0).toLocaleString('en-NG');}
+function aitPF(){
+  if(typeof SD==='undefined')return;
+  const s=SD.students||[];
+  const exp=s.reduce((a,x)=>a+(x.totalFee||0),0);
+  const col=s.reduce((a,x)=>a+(x.paid||0),0);
+  const pct=exp>0?Math.round(col/exp*100):0;
+  const r=document.getElementById('ait-fin-rate'),o=document.getElementById('ait-fin-owed'),c=document.getElementById('ait-fin-count');
+  if(r){r.textContent=pct+'%';r.style.color=pct>=80?'#15803D':pct>=60?'#C9A84C':'#DC2626';}
+  if(o)o.textContent=aitFmtN(exp-col);if(c)c.textContent=s.length;
+}
+async function aitRunFinance(){
+  const btn=document.getElementById('ait-fin-btn'),out=document.getElementById('ait-fin-out');
+  if(btn){btn.disabled=true;btn.textContent='Analysing…';}
+  if(out)out.innerHTML='<div style="color:var(--sub);font-size:0.82rem;padding:10px">⏳ Analysing…</div>';
+  if(typeof SD==='undefined'){if(out)out.innerHTML='<div style="color:var(--danger)">Log in first.</div>';return;}
+  const s=SD.students||[],cfg=SD.config||{};
+  const exp=s.reduce((a,x)=>a+(x.totalFee||0),0),col=s.reduce((a,x)=>a+(x.paid||0),0);
+  const debtors=s.filter(x=>(x.totalFee||0)-(x.paid||0)>0).length;
+  const expenses=(SD.expenses||[]).reduce((a,e)=>a+(e.amount||0),0);
+  const prompt=`You are EduBloom Finance AI Advisor for Nigerian schools. Be specific, use exact numbers, practical.\n\nSchool: ${cfg.schoolName||'School'}, Students: ${s.length}, Tier: ${cfg.tier||'—'}, Expected: ${aitFmtN(exp)}, Collected: ${aitFmtN(col)}, Outstanding: ${aitFmtN(exp-col)}, Rate: ${exp>0?Math.round(col/exp*100):0}%, Debtors: ${debtors}, Expenses: ${aitFmtN(expenses)}, Net: ${aitFmtN(col-expenses)}, Term: ${cfg.currentTerm||'—'}.\n\nProvide: 📊 Summary, ⚠️ Key Risks, ✅ 3 Actionable Recommendations.`;
+  const reply=await geminiChat(prompt);
+  if(out)out.innerHTML=`<div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:0.81rem;line-height:1.7;white-space:pre-wrap;">${reply}</div>`;
+  if(btn){btn.disabled=false;btn.textContent='🔍 Analyse This Term';}
+}
+
+// Report card generator
+function aitPR(){const t=document.getElementById('ait-rc-term');if(t&&!t.value&&typeof SD!=='undefined')t.value=SD.config?.currentTerm||'First Term';}
+function aitRcFromStudent(){
+  if(typeof activeIdx==='undefined'||activeIdx===null||!SD?.students?.[activeIdx]){alert('Open a student profile first.');return;}
+  const s=SD.students[activeIdx];
+  const ne=document.getElementById('ait-rc-name'),ce=document.getElementById('ait-rc-class');
+  if(ne)ne.value=s.name||'';if(ce)ce.value=s.class||'';
+  const term=SD.config?.currentTerm||'First Term',sid=s.id||activeIdx;
+  const td=(SD.scores?.[term]||{})[sid]||{};
+  const sc=(SD.config?.subjects||['English','Maths','Science']).map(sub=>{const v=td[sub]||{};const t=(v.ca1||0)+(v.ca2||0)+(v.ca3||0)+(v.exam||0);return t>0?sub+': '+t:'';}).filter(Boolean).join(', ');
+  const se=document.getElementById('ait-rc-subs');if(se&&sc)se.value=sc;
+  alert('Filled from '+s.name+'. Check and tap Generate.');
+}
+async function aitGenReport(){
+  const btn=document.getElementById('ait-rc-btn'),out=document.getElementById('ait-rc-out');
+  const name=document.getElementById('ait-rc-name')?.value?.trim();
+  if(!name){alert('Enter student name.');return;}
+  if(btn){btn.disabled=true;btn.textContent='Generating…';}
+  if(out)out.innerHTML='<div style="color:var(--sub);font-size:0.82rem;padding:8px">⏳ Generating…</div>';
+  const cls=document.getElementById('ait-rc-class')?.value||'',term=document.getElementById('ait-rc-term')?.value||'First Term',att=document.getElementById('ait-rc-att')?.value||'',subs=document.getElementById('ait-rc-subs')?.value||'';
+  const prompt=`Generate a professional 3-4 sentence Nigerian school end-of-term teacher comment. Start with the student's first name. Be warm, specific, and encouraging.\n\nStudent: ${name} | Class: ${cls} | Term: ${term}${att?' | Attendance: '+att+'%':''} | Scores: ${subs||'not provided'}`;
+  const reply=await geminiChat(prompt);
+  if(out)out.innerHTML=`<div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:12px;"><div style="font-size:10px;font-weight:700;color:#15803D;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">${esc(name)}</div><div id="ait-rc-text" style="font-size:0.82rem;line-height:1.7;">${reply}</div><div style="display:flex;gap:7px;margin-top:8px;"><button onclick="navigator.clipboard.writeText(document.getElementById('ait-rc-text').textContent)" style="flex:1;background:#15803D;color:#fff;border:none;border-radius:7px;padding:7px;font-size:0.75rem;font-weight:700;cursor:pointer">Copy</button><button onclick="document.getElementById('ait-rc-out').innerHTML=''" style="flex:1;background:transparent;color:#15803D;border:2px solid #15803D;border-radius:7px;padding:7px;font-size:0.75rem;font-weight:700;cursor:pointer">Clear</button></div></div>`;
+  if(btn){btn.disabled=false;btn.textContent='✍️ Generate Comment';}
+}
+
+// Parent comms
+let aitSc='fee';
+const ACF={fee:['parent','student','amount','due'],absent:['parent','student','cls','absent_date'],collector:['parent','student','collector'],report:['parent','student','cls']};
+const ACL={parent:'Parent Name',student:'Student Name',cls:'Class',amount:'Amount Owed',due:'Due Date',absent_date:'Date Absent',collector:'Collector Name'};
+const ACD={parent:'',student:'',cls:'',amount:'₦20,000',due:'end of term',absent_date:'today',collector:''};
+function aitSetScenario(id,el){
+  aitSc=id;
+  document.querySelectorAll('.ait-sc-btn').forEach(b=>{b.style.background='transparent';b.style.color='#1D4ED8';b.style.borderColor='#BFDBFE';});
+  if(el){el.style.background='#1D4ED8';el.style.color='#fff';}
+  aitRC();document.getElementById('ait-comms-out').innerHTML='';
+}
+function aitRC(){
+  const w=document.getElementById('ait-comms-fields');if(!w)return;
+  w.innerHTML=(ACF[aitSc]||[]).map(f=>`<div><label style="font-size:10px;font-weight:700;color:#1D4ED8;text-transform:uppercase;letter-spacing:1.2px;display:block;margin-bottom:3px">${ACL[f]||f}</label><input id="aitcf-${f}" value="${ACD[f]||''}" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:0.79rem;background:var(--bg);color:var(--text);font-family:inherit;outline:none;box-sizing:border-box"></div>`).join('');
+}
+async function aitGenComms(){
+  const btn=document.getElementById('ait-comms-btn'),out=document.getElementById('ait-comms-out');
+  if(btn){btn.disabled=true;btn.textContent='Drafting…';}
+  if(out)out.innerHTML='<div style="color:var(--sub);font-size:0.82rem;padding:8px">⏳ Drafting…</div>';
+  const g=id=>{const e=document.getElementById('aitcf-'+id);return e?e.value:'';};
+  const school=(typeof SD!=='undefined')?(SD.config?.schoolName||'School'):'School';
+  const prompts={
+    fee:`Fee reminder WhatsApp message from ${school}. Parent: ${g('parent')}, Student: ${g('student')}, Owes: ${g('amount')}, Due: ${g('due')}. Friendly but firm. Under 80 words.`,
+    absent:`Absence alert WhatsApp from ${school}. Parent: ${g('parent')}, Student: ${g('student')} (${g('cls')}) absent on ${g('absent_date')}. Urgent, ask parent to confirm. Under 70 words.`,
+    collector:`URGENT WhatsApp from ${school}. Person named "${g('collector')}" tried to collect ${g('student')} but is NOT authorised. Child was NOT released. Parent must call school immediately. Under 80 words.`,
+    report:`Report card ready WhatsApp from ${school}. Student: ${g('student')} (${g('cls')}). Notify parent to collect. Under 60 words.`
+  };
+  const sys='Draft professional warm WhatsApp message from Nigerian school to parent. Nigerian English. Sign off with school name.';
+  const reply=await geminiChat(prompts[aitSc]||'',sys);
+  if(out)out.innerHTML=`<div style="margin-top:2px"><div style="background:#E5DDD5;border-radius:10px;padding:10px"><div style="background:#DCF8C6;border-radius:4px 12px 12px 12px;padding:9px 13px;max-width:85%;margin-left:auto"><div id="ait-wa-text" style="font-size:0.79rem;line-height:1.7;font-family:sans-serif;color:#1A1A1A;white-space:pre-wrap">${reply}</div><div style="font-size:9px;color:#667781;text-align:right;margin-top:3px">✓✓</div></div></div><div style="display:flex;gap:7px;margin-top:7px"><button onclick="navigator.clipboard.writeText(document.getElementById('ait-wa-text').textContent)" style="flex:1;background:#1D4ED8;color:#fff;border:none;border-radius:7px;padding:7px;font-size:0.75rem;font-weight:700;cursor:pointer">Copy</button><button onclick="document.getElementById('ait-comms-out').innerHTML=''" style="flex:1;background:transparent;color:#1D4ED8;border:2px solid #1D4ED8;border-radius:7px;padding:7px;font-size:0.75rem;font-weight:700;cursor:pointer">Clear</button></div></div>`;
+  if(btn){btn.disabled=false;btn.textContent='💬 Draft Message';}
+}
+
+function renderAITools(){aitInitChat();aitPF();aitPR();aitRC();}
+</script>
+
+</body>
+</html>
